@@ -20,3 +20,8 @@
 ## License
 
 ## Tests
+
+## Image Source
+### Chess Piece Images:
+
+projects, C. to W. (2025, September 4). Wikimedia Commons. https://commons.wikimedia.org/wiki/Main_Page 
