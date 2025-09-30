@@ -8,6 +8,7 @@ const piecesImages = document.getElementsByTagName("img");
    This function also calculates the row and column of each square and assigns an ID to the square in the
    format column + row, where column is a letter from 'a' to 'h' and row is a number from 1 to 8 */
 setupBoardSquares();
+setupPieces()
 function setupBoardSquares() {
     for (let i = 0; i < boardSquares.length; i++) {
         boardSquares[i].addEventListener("dragover", allowDrop);
