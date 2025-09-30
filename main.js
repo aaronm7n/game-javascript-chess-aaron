@@ -1,4 +1,5 @@
 let legalSquares = [];
+let isWhiteTurn = true;
 const boardSquares = document.getElementsByClassName("square");
 const pieces = document.getElementsByClassName("piece");
 const piecesImages = document.getElementsByTagName("img");
@@ -49,7 +50,10 @@ function allowDrop(ev) {
    the ID of the piece. This allows the data to be transferred during the drag and drop operation */
 function drag(ev) {
     const piece = ev.target;
-    ev.dataTransfer.setData("text", piece.id);
+    const pieceColor = piece.getAttribute("color");
+
+    if ((isWhiteTurn && pieceColor == "white") || (!isWhiteTurn && pieceColor == "black"))
+        ev.dataTransfer.setData("text", piece.id);
 }
 
 /* The drop() function retrieves the data that was set during the dragstart event by calling the getData method on the dataTransfer property of the event object
@@ -64,4 +68,5 @@ function drop(ev) {
     const destinationSquare = ev.currentTarget;
     let destinationSquareId = destinationSquare.id;
     destinationSquare.appendChild(piece);
+    isWhiteTurn = !isWhiteTurn;
 }
