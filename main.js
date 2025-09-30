@@ -36,3 +36,32 @@ function setupPieces() {
         piecesImages[i].setAttribute("draggable", false);
     }
 }
+
+/* By default, an element cannot be dropped on another elemnt. Calling the preventDefault method on the dragover event cancels this default behavior
+   and allows the drop to occur */
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+/* The drag() function retrieves the target of the event, which is the piece element being dragged 
+   
+   The function then calls the setData method on the dataTransfer property of the event object, setting the data type to "text" and the data value to
+   the ID of the piece. This allows the data to be transferred during the drag and drop operation */
+function drag(ev) {
+    const piece = ev.target;
+    ev.dataTransfer.setData("text", piece.id);
+}
+
+/* The drop() function retrieves the data that was set during the dragstart event by calling the getData method on the dataTransfer property of the event object
+
+   It then retrieves the target of the drop event, which is the element on which the drop occured, and assigns it to the destinationSquare variable 
+
+   Finally, it appends the dragged element to the destinationSquare, effectively moving it to its new location on the board */
+function drop(ev) {
+    ev.preventDefault();
+    let data = ev.dataTransfer.getData("text");
+    const piece = document.getElementById(data);
+    const destinationSquare = ev.currentTarget;
+    let destinationSquareId = destinationSquare.id;
+    destinationSquare.appendChild(piece);
+}
