@@ -67,6 +67,31 @@ function drop(ev) {
     const piece = document.getElementById(data);
     const destinationSquare = ev.currentTarget;
     let destinationSquareId = destinationSquare.id;
-    destinationSquare.appendChild(piece);
-    isWhiteTurn = !isWhiteTurn;
+
+    if (isSquareOccupied(destinationSquare) == "blank") {
+        destinationSquare.appendChild(piece);
+        isWhiteTurn = !isWhiteTurn;
+        return;
+    }
+    if (isSquareOccupied(destinationSquare) != "blank") {
+        while (destinationSquare.firstChild) {
+            destinationSquare.removeChild(destinationSquare.firstChild);
+        }
+        destinationSquare.appendChild(piece);
+        isWhiteTurn = !isWhiteTurn;
+        return;
+    }
+}
+
+/* The isSquareOccupied function checks if a sqaure is occupied by a piece. If it is, the function returns the color of the piece; if not it returns "blank" 
+
+   This does 2 things. Enables us to add the capture feature and it enables us to prevent pieces from moving to already occupied squares */
+function isSquareOccupied(square) {
+    if (square.querySelector(".piece")) {
+        const color = square.querySelector(".piece").getAttribute("color");
+        return color;
+    }
+    else {
+        return "blank";
+    }
 }
