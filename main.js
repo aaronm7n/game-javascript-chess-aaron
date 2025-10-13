@@ -52,8 +52,12 @@ function drag(ev) {
     const piece = ev.target;
     const pieceColor = piece.getAttribute("color");
 
-    if ((isWhiteTurn && pieceColor == "white") || (!isWhiteTurn && pieceColor == "black"))
+    if ((isWhiteTurn && pieceColor == "white") || (!isWhiteTurn && pieceColor == "black")) {
+
         ev.dataTransfer.setData("text", piece.id);
+        const startingSquareId = piece.parentNode.id;
+        getPossibleMoves(startingSquareId, piece);
+    }
 }
 
 /* The drop() function retrieves the data that was set during the dragstart event by calling the getData method on the dataTransfer property of the event object
@@ -68,18 +72,42 @@ function drop(ev) {
     const destinationSquare = ev.currentTarget;
     let destinationSquareId = destinationSquare.id;
 
-    if (isSquareOccupied(destinationSquare) == "blank") {
+    if ((isSquareOccupied(destinationSquare) == "blank") && (legalSquares.includes(destinationSquareId))) {
         destinationSquare.appendChild(piece);
         isWhiteTurn = !isWhiteTurn;
+        legalSquares.length = 0;
         return;
     }
-    if (isSquareOccupied(destinationSquare) != "blank") {
+    if ((isSquareOccupied(destinationSquare) != "blank") && (legalSquares.includes(destinationSquareId))) {
         while (destinationSquare.firstChild) {
             destinationSquare.removeChild(destinationSquare.firstChild);
         }
         destinationSquare.appendChild(piece);
         isWhiteTurn = !isWhiteTurn;
+        legalSquares.length = 0;
         return;
+    }
+}
+
+function getPossibleMoves(startingSquareId, piece) {
+    const pieceColor = piece.getAttribute("color");
+    if (piece.classList.contains("pawn")) {
+        getPawnMoves(startingSquareId, pieceColor);
+    }
+    if (piece.classList.contains("knight")) {
+        getKnightMoves(startingSquareId, pieceColor);
+    }
+    if (piece.classList.contains("rook")) {
+        getRookMoves(startingSquareId, pieceColor);
+    }
+    if (piece.classList.contains("bishop")) {
+        getBishopMoves(startingSquareId, pieceColor);
+    }
+    if (piece.classList.contains("queen")) {
+        getQueenMoves(startingSquareId, pieceColor);
+    }
+    if (piece.classList.contains("king")) {
+        getKingMoves(startingSquareId, pieceColor);
     }
 }
 
@@ -93,5 +121,347 @@ function isSquareOccupied(square) {
     }
     else {
         return "blank";
+    }
+}
+
+function getPawnMoves(startingSquareId, pieceColor) {
+    checkPawnDiagonalCaptures(startingSquareId, pieceColor);
+    checkPawnForwardMoves(startingSquareId, pieceColor);
+}
+
+/* The checkPawnDiagonalCaptures() function checks the two diagonal squares to the top left and top right of the pawn. If there are pieces of the opposite color
+   on those squares, it adds them to the legalSquares array */
+function checkPawnDiagonalCaptures(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentFile = file;
+    let currentRank = rankNumber;
+    let currentSquareId = currentFile + currentRank;
+    let currentSquare = document.getElementById(currentSquareId);
+    let squareContent = isSquareOccupied(currentSquare);
+    const direction = pieceColor == "white" ? 1:-1;
+
+    currentRank += direction;
+    for (let i = -1; i <= 1; i += 2) {
+        // This line of code takes the first character of the file string and converts it to its Unicode value using the charCodeAt method.
+        // Then it adds i to that value and converts it back to a character using the fromCharCode method.
+        currentFile = String.fromCharCode(file.charCodeAt(0) + i);
+        if (currentFile >= "a" && currentFile <= "h") {
+            currentSquareId = currentFile + currentRank;
+            currentSquare = document.getElementById(currentSquareId);
+            squareContent = isSquareOccupied(currentSquare);
+
+            if (squareContent != "blank" && squareContent != pieceColor) { // If a square is occupied by a piece of the opposite color, the pawn can move to that square and capture the piece
+                legalSquares.push(currentSquareId); // The ID of the legal square should be added to the legalSquares array
+            }
+        }
+    }
+}
+
+/* The checkPawnForwardMoves() Function first checks the square directly in front of the pawn. If it is not a legal move, there are no other legal moves for the pawn
+   If it is a legal move, the square is added to the legalSquare array
+   
+   Then, if the pawn is on the 2nd or 7th rank, the function checks the second square in front of the pawn */
+function checkPawnForwardMoves(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentFile = file;
+    let currentRank = rankNumber;
+    let currentSquareId = currentFile + currentRank;
+    let currentSquare = document.getElementById(currentSquareId);
+    let squareContent = isSquareOccupied(currentSquare);
+    const direction = pieceColor == "white" ? 1:-1;
+    currentRank += direction;
+    currentSquareId = currentFile + currentRank;
+    currentSquare = document.getElementById(currentSquareId);
+    squareContent = isSquareOccupied(currentSquare);
+
+    if (squareContent != "blank")  // If a square is occupied by a piece of the opposite color, the pawn can move to that square and capture the piece
+        return;
+    legalSquares.push(currentSquareId);
+    if (rankNumber != 2 && rankNumber != 7)
+        return;
+    currentRank += direction;
+    currentSquareId = currentFile + currentRank;
+    currentSquare = document.getElementById(currentSquareId);
+    squareContent = isSquareOccupied(currentSquare);
+
+    if (squareContent != "blank")  // If a square is occupied by a piece of the opposite color, the pawn can move to that square and capture the piece
+        return;
+    legalSquares.push(currentSquareId);
+}
+
+function getKnightMoves(startingSquareId, pieceColor) {
+    const file = startingSquareId.charCodeAt(0) - 97;
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentFile = file;
+    let currentRank = rankNumber;
+
+    // The move array lists the possible squares a knight can move to. The function then checks if any of these squares contain a piece of the same color. 
+    // If not the square is considered a legal move for the knight
+    const moves = [ 
+        [-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1]
+    ];
+    moves.forEach((move) => {
+        currentFile = file + move[0];
+        currentRank = rankNumber + move[1];
+        if (currentFile >= 0 && currentFile <= 7 && currentRank > 0 && currentRank <= 8)
+        {
+            let currentSquareId = String.fromCharCode(currentFile + 97) + currentRank;
+            let currentSquare = document.getElementById(currentSquareId);
+            let squareContent = isSquareOccupied(currentSquare);
+
+            if (squareContent != "blank" && squareContent == pieceColor)
+                return;
+            legalSquares.push(String.fromCharCode(currentFile + 97) + currentRank);
+        }
+    });
+}
+
+/* The getRookMoves() fucntion begins at the rook's starting square and moves in four directions (up, down, left, right) to check for legal squares */
+function getRookMoves(startingSquareId, pieceColor) {
+    moveToEighthRank(startingSquareId, pieceColor);
+    moveToFirstRank(startingSquareId, pieceColor);
+    moveToAFile(startingSquareId, pieceColor);
+    moveToHFile(startingSquareId, pieceColor);
+}
+
+/* The getBishopMoves() function works very similarly to the getRookMoves() function except the movement is done diagonally instead of horizontally or vertically */
+function getBishopMoves(startingSquareId, pieceColor) {
+    moveToEighthRankHFile(startingSquareId, pieceColor); // Forward and to the right (White)
+    moveToEighthRankAFile(startingSquareId, pieceColor); // Forward and to the left (White)
+    moveToFirstRankHFile(startingSquareId, pieceColor); // Forward and to the right (Black)
+    moveToFirstRankAFile(startingSquareId, pieceColor); // Forward and to the left (Black)
+}
+
+/* The getQueenMoves() function is a combination of the legal squares for a rook and a bishop */
+function getQueenMoves(startingSquareId, pieceColor) {
+    moveToEighthRankHFile(startingSquareId, pieceColor); // Forward and to the right (White)
+    moveToEighthRankAFile(startingSquareId, pieceColor); // Forward and to the left (White)
+    moveToFirstRankHFile(startingSquareId, pieceColor); // Forward and to the right (Black)
+    moveToFirstRankAFile(startingSquareId, pieceColor); // Forward and to the left (Black)
+    moveToEighthRank(startingSquareId, pieceColor);
+    moveToFirstRank(startingSquareId, pieceColor);
+    moveToAFile(startingSquareId, pieceColor);
+    moveToHFile(startingSquareId, pieceColor);
+}
+
+/* The getKingMoves() function is similar to getKnightMoves() with the only difference being the moves array for the king */
+function getKingMoves(startingSquareId, pieceColor) {
+    const file = startingSquareId.charCodeAt(0) - 97;
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentFile = file;
+    let currentRank = rankNumber;
+
+    // The move array lists the possible squares a knight can move to. The function then checks if any of these squares contain a piece of the same color. 
+    // If not the square is considered a legal move for the knight
+    const moves = [ 
+        [0, 1], [0, -1], [1, 1], [1, -1], [-1, 0], [-1, -1], [-1, 1], [1, 0]
+    ];
+    moves.forEach((move) => {
+        currentFile = file + move[0];
+        currentRank = rankNumber + move[1];
+        if (currentFile >= 0 && currentFile <= 7 && currentRank > 0 && currentRank <= 8)
+        {
+            let currentSquareId = String.fromCharCode(currentFile + 97) + currentRank;
+            let currentSquare = document.getElementById(currentSquareId);
+            let squareContent = isSquareOccupied(currentSquare);
+
+            if (squareContent != "blank" && squareContent == pieceColor)
+                return;
+            legalSquares.push(String.fromCharCode(currentFile + 97) + currentRank);
+        }
+    });
+}
+
+/* The moveToEighthRank() fucntion moves from the starting square to the eighth rank, one square at a time. It checks if each square is empty or occupied by a piece of the opposite color.
+   
+   If either condition is met, the square is added to the legal squares list
+   
+   If a square is occupied or the place reaches the eighth rank, the movement stops */
+function moveToEighthRank(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentRank = rankNumber;
+
+    while (currentRank != 8) {
+        currentRank++;
+        let currentSquareId = file + currentRank;
+        let currentSquare = document.getElementById(currentSquareId);
+        let squareContent = isSquareOccupied(currentSquare);
+
+        if (squareContent != "blank" && squareContent == pieceColor)
+            return;
+        legalSquares.push(currentSquareId);
+        if (squareContent != "blank" && squareContent != pieceColor)
+            return;
+    }
+    return;
+}
+
+/* A similar method is used to check for legal moves in the other three directions (left, right, and down) */
+function moveToFirstRank(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentRank = rankNumber;
+
+    while (currentRank != 1) {
+        currentRank--;
+        let currentSquareId = file + currentRank;
+        let currentSquare = document.getElementById(currentSquareId);
+        let squareContent = isSquareOccupied(currentSquare);
+
+        if (squareContent != "blank" && squareContent == pieceColor)
+            return;
+        legalSquares.push(currentSquareId);
+        if (squareContent != "blank" && squareContent != pieceColor)
+            return;
+    }
+    return;
+}
+
+function moveToAFile(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    let currentFile = file;
+
+    while (currentFile != "a") {
+        currentFile = String.fromCharCode(currentFile.charCodeAt(currentFile.length - 1) - 1);
+        let currentSquareId = currentFile + rank;
+        let currentSquare = document.getElementById(currentSquareId);
+        let squareContent = isSquareOccupied(currentSquare);
+
+        if (squareContent != "blank" && squareContent == pieceColor)
+            return;
+        legalSquares.push(currentSquareId);
+        if (squareContent != "blank" && squareContent != pieceColor)
+            return;
+    }
+    return;
+}
+
+function moveToHFile(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    let currentFile = file;
+
+    while (currentFile != "h") {
+        currentFile = String.fromCharCode(currentFile.charCodeAt(currentFile.length - 1) + 1);
+        let currentSquareId = currentFile + rank;
+        let currentSquare = document.getElementById(currentSquareId);
+        let squareContent = isSquareOccupied(currentSquare);
+
+        if (squareContent != "blank" && squareContent == pieceColor)
+            return;
+        legalSquares.push(currentSquareId);
+        if (squareContent != "blank" && squareContent != pieceColor)
+            return;
+    }
+    return;
+}
+
+function moveToEighthRankAFile(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentFile = file;
+    let currentRank = rankNumber;
+    
+    // The search for legal squares stops when the piece reaches the edge of the board, eother the eighth rank or the "a" file
+    while (!(currentFile == "a" || currentRank == 8)) {
+        currentFile = String.fromCharCode(currentFile.charCodeAt(currentFile.lenght - 1) - 1);
+        currentRank++;
+        let currentSquareId = currentFile + currentRank;
+        let currentSquare = document.getElementById(currentSquareId);
+        let squareContent = isSquareOccupied(currentSquare);
+
+        // If a square is empty or occupied by a piece of the opposite color, it is added to the legal square list
+        // If the square is occupied by a piece of the same color, the search for legal squares stops
+        if (squareContent != "blank" && squareContent == pieceColor)
+            return;
+        legalSquares.push(currentSquareId);
+        if (squareContent != "blank" && squareContent != pieceColor)
+            return;
+    }
+}
+
+function moveToEighthRankHFile(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentFile = file;
+    let currentRank = rankNumber;
+    
+    // The search for legal squares stops when the piece reaches the edge of the board, eother the eighth rank or the "a" file
+    while (!(currentFile == "h" || currentRank == 8)) {
+        currentFile = String.fromCharCode(currentFile.charCodeAt(currentFile.lenght - 1) + 1);
+        currentRank++;
+        let currentSquareId = currentFile + currentRank;
+        let currentSquare = document.getElementById(currentSquareId);
+        let squareContent = isSquareOccupied(currentSquare);
+
+        // If a square is empty or occupied by a piece of the opposite color, it is added to the legal square list
+        // If the square is occupied by a piece of the same color, the search for legal squares stops
+        if (squareContent != "blank" && squareContent == pieceColor)
+            return;
+        legalSquares.push(currentSquareId);
+        if (squareContent != "blank" && squareContent != pieceColor)
+            return;
+    }
+}
+
+function moveToFirstRankAFile(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentFile = file;
+    let currentRank = rankNumber;
+    
+    // The search for legal squares stops when the piece reaches the edge of the board, eother the eighth rank or the "a" file
+    while (!(currentFile == "a" || currentRank == 1)) {
+        currentFile = String.fromCharCode(currentFile.charCodeAt(currentFile.lenght - 1) - 1);
+        currentRank--;
+        let currentSquareId = currentFile + currentRank;
+        let currentSquare = document.getElementById(currentSquareId);
+        let squareContent = isSquareOccupied(currentSquare);
+
+        // If a square is empty or occupied by a piece of the opposite color, it is added to the legal square list
+        // If the square is occupied by a piece of the same color, the search for legal squares stops
+        if (squareContent != "blank" && squareContent == pieceColor)
+            return;
+        legalSquares.push(currentSquareId);
+        if (squareContent != "blank" && squareContent != pieceColor)
+            return;
+    }
+}
+
+function moveToFirstRankHFile(startingSquareId, pieceColor) {
+    const file = startingSquareId.charAt(0);
+    const rank = startingSquareId.charAt(1);
+    const rankNumber = parseInt(rank);
+    let currentFile = file;
+    let currentRank = rankNumber;
+    
+    // The search for legal squares stops when the piece reaches the edge of the board, eother the eighth rank or the "a" file
+    while (!(currentFile == "h" || currentRank == 1)) {
+        currentFile = String.fromCharCode(currentFile.charCodeAt(currentFile.lenght - 1) + 1);
+        currentRank--;
+        let currentSquareId = currentFile + currentRank;
+        let currentSquare = document.getElementById(currentSquareId);
+        let squareContent = isSquareOccupied(currentSquare);
+
+        // If a square is empty or occupied by a piece of the opposite color, it is added to the legal square list
+        // If the square is occupied by a piece of the same color, the search for legal squares stops
+        if (squareContent != "blank" && squareContent == pieceColor)
+            return;
+        legalSquares.push(currentSquareId);
+        if (squareContent != "blank" && squareContent != pieceColor)
+            return;
     }
 }
